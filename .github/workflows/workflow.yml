@@ -64,9 +64,45 @@ jobs:
             {
               write-information $resultMessage
             }
-    deploy:
+    preview:
         runs-on: ubuntu-latest
         needs: [lint, validate]
+        steps:
+          - name: Checkout under $GITHUB_WORKSPACE
+            uses: actions/checkout@v4.1.1
+          - name: Login to Azure
+            uses: Azure/login@v1.6.1
+            with:
+              client-id: ${{ vars.AZURE_CLIENT_ID }}
+              tenant-id: ${{ vars.AZURE_TENANT_ID }}
+              subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+              enable-AzPSSession: true
+          - name: Run what-if
+            env:
+              AZURE_RESOURCEGROUP_NAME: ${{ env.AZURE_RESOURCEGROUP_NAME }}
+              ENVIRONMENT: ${{ env.ENVIRONMENT_TYPE }}
+            run: |
+              $ErrorActionPreference = 'Stop'
+              Set-StrictMode -Version 3
+              $InformationPreference = 'Continue'
+
+              Write-Information 'Install modules'
+              Install-Module -Name 'Az.Resources' -Force
+
+              $param = @{
+                  Mode = 'Complete'
+                  TemplateFile = 'deploy/main.bicep'
+                  SkipTemplateParameterPrompt = $true
+                  TemplateParameterObject = @{
+                      environmentType = $env:ENVIRONMENT_TYPE
+                  }
+              }
+
+              New-AzResourceGroupDeployment @param -ResourceGroupName $env:AZURE_RESOURCEGROUP_NAME -WhatIf
+    deploy:
+        runs-on: ubuntu-latest
+        environment: Edenviroment
+        needs: [preview]
         steps:
         - name: Checkout under $GITHUB_WORKSPACE
           uses: actions/checkout@v4.1.1
