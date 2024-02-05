@@ -55,7 +55,7 @@ jobs:
 
             $errorArray = Test-AzResourceGroupDeployment @param -ResourceGroupName $env:AZURE_RESOURCEGROUP_NAME
 
-            $resultMessage = "There are $('{0:N0}' -f  [$('{0:N0}' -f $errorArray.count] errors)"
+            $resultMessage = "There are [$('{0:N0}' -f $errorArray.count)] errors)"
             if ($errorArray.count -ne 0)
             {
               throw $resultMessage
